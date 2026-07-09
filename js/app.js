@@ -2,11 +2,18 @@ const DATA_URL = 'data/dining-data.csv';
 function canonicalType(raw, name='', building='') {
   const t = String(raw || '').toLowerCase();
   const n = String(name || '').toLowerCase();
-  const b = String(building || '').toLowerCase();
-  if (t.includes('dining hall') || n.includes('urban bites') || n.includes('united table') || n.includes('crimson view')) return 'Dining hall';
-  if (t.includes('market') || n.includes('market') || n.includes('store front')) return 'Market';
-  if (t.includes('food court') || b.includes('gardner commons') || b.includes('olpin student union') || b.includes('union')) return 'Food court';
-  if (t.includes('quick service') || t.includes('quick-service')) return 'Quick service';
+
+  if (t.includes('dining hall') || n.includes('urban bites') || n.includes('united table')) return 'Dining hall';
+
+  if (t.includes('market') || n.includes('market') || n.includes('store front') || n.includes('miller cafe'))
+    return 'Market';
+
+  if (t.includes('quick service') || t.includes('quick-service'))
+    return 'Quick service';
+
+  if (t.includes('food court'))
+    return 'Food court';
+
   return 'Cafe';
 }
 let locations = [];
@@ -128,7 +135,7 @@ function updateLegend(rows=filteredLocations()) {
   const e = extent(activeMetric, rows);
   const modeText = displayMode === 'color' ? 'hotter marker color' : 'larger bubble size';
   const note = displayMode === 'color' ? 'Darker red means a higher value.' : 'Larger circles mean a higher value.';
-  document.getElementById('legend').innerHTML = `<b>${meta.label} shown by ${modeText}</b><div class="grad"></div><div style="display:flex;justify-content:space-between"><span>${fmt(e.min, activeMetric)}</span><span>${fmt(e.max, activeMetric)}</span></div>`;
+  document.getElementById('legend').innerHTML = `<b>${meta.label} shown by ${modeText}</b><div class="grad"></div><div style="display:flex;justify-content:space-between"><span>${fmt(e.min, activeMetric)}</span><span>${fmt(e.max, activeMetric)}</span></div><p class="muted">${note}</p>`;
 }
 function updatePanel(rows=filteredLocations()) {
   const totalTraffic = rows.reduce((s,d)=>s+d.traffic,0);
@@ -155,10 +162,10 @@ function updatePanel(rows=filteredLocations()) {
   const sorted = [...rows].sort((a,b)=>valueFor(b)-valueFor(a)).slice(0,7);
   const max = Math.max(...sorted.map(d=>valueFor(d)),1);
   document.getElementById('topTitle').textContent = `Top by ${metricMeta[activeMetric].label.toLowerCase()}`;
-  document.getElementById('topList').innerHTML = sorted.map(d => `<div class="barrow" onclick="focusLocation('${escapeAttr(d.id)}')"><div class="line"><b>${escapeHtml(d.name)}</b><span>${fmt(valueFor(d), activeMetric)}</span></div><div class="bar"><div class="fill" style="width:${normalize(valueFor(d),activeMetric,sorted)*100}%"></div></div></div>`).join('');
+  document.getElementById('topList').innerHTML = sorted.map(d => `<div class="barrow" onclick="focusLocation('${escapeAttr(d.id)}')"><div class="line"><b>${escapeHtml(d.name)}</b><span>${fmt(valueFor(d), activeMetric)}</span></div><div class="bar" style="width:${normalize(valueFor(d), activeMetric, sorted)*100}%"></div></div>`).join('');
   const sort = document.getElementById('sortSelect').value;
   const listRows = [...rows].sort((a,b) => sort === 'name' ? a.name.localeCompare(b.name) : valueFor(b, sort)-valueFor(a, sort));
-  document.getElementById('locationTable').innerHTML = listRows.map(d => `<div class="tableitem" onclick="focusLocation('${escapeAttr(d.id)}')"><div><div class="name">${escapeHtml(d.name)}</div><div class="muted">${escapeHtml(d.building)}</div></div><div class="metric">${fmt(valueFor(d),sort)}</div></div>`).join('');
+  document.getElementById('locationTable').innerHTML = listRows.map(d => `<div class="tableitem" onclick="focusLocation('${escapeAttr(d.id)}')"><div><div class="name">${escapeHtml(d.name)}</div><div class="meta">${escapeHtml(d.building)}</div></div><div class="value">${fmt(valueFor(d, sort), sort)}</div></div>`).join('');
   renderSelected(locations.find(d=>d.id===selectedId));
 }
 function selectLocation(id) { selectedId = id; updatePanel(); }
@@ -197,8 +204,15 @@ function applyEdits(id) {
 window.applyEdits = applyEdits;
 function populateTypeFilter() {
   const wrap = document.getElementById('typeButtons');
-  const types = ['all','Cafe','Quick service','Food court','Dining hall','Market'];
-  const labels = {all:'All types', Cafe:'Cafe', 'Quick service':'Quick service', 'Food court':'Food court', 'Dining hall':'Dining hall', Market:'Market'};
+  const types = ['all', 'Cafe', 'Quick service', 'Food court', 'Dining hall', 'Market'];
+  const labels = {
+    all: 'All types',
+    Cafe: 'Cafe',
+    'Quick service': 'Quick service',
+    'Food court': 'Food court',
+    'Dining hall': 'Dining hall',
+    Market: 'Market'
+  };
   wrap.innerHTML = types.map(t => `<button class="type-chip ${selectedType===t ? 'active' : ''}" type="button" data-type="${t}" aria-pressed="${selectedType===t}">${labels[t]}</button>`).join('');
   wrap.querySelectorAll('button').forEach(btn => btn.addEventListener('click', () => {
     selectedType = btn.dataset.type;
@@ -294,7 +308,7 @@ async function loadData() {
     draw();
   } catch (err) {
     console.error(err);
-    document.getElementById('selectedCard').innerHTML = '<h3>Data could not load</h3><p class="muted">Make sure data/dining-data.csv is uploaded in the repository and the site is opened through GitHub Pages or a local server.</p>';
+    document.getElementById('selectedCard').innerHTML = '<h3>Data could not load</h3><p class="muted">Make sure data/dining-data.csv is uploaded in the repository and the site is opened through GitHub Pages.</p>';
   }
 }
 loadData();
