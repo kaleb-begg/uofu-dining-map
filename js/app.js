@@ -1,4 +1,4 @@
-const DATA_URL = 'data/dining-data.csv';
+const DATA_URL = 'data/TestMap.csv';
 function canonicalType(raw, name='', building='') {
   const t = String(raw || '').toLowerCase();
   const n = String(name || '').toLowerCase();
